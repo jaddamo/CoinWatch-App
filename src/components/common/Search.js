@@ -1,8 +1,9 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import Loading from './Loading';
+import { handleResponse } from '../../helpers.js';
+import Loading from '../common/Loading';
 import { API_URL } from '../../config';
-import { handleResponse } from '../../helpers';
 import './Search.css';
 
 class Search extends React.Component {
@@ -13,42 +14,44 @@ class Search extends React.Component {
       searchResults: [],
       searchQuery: '',
       loading: false,
-    };
-
-    this.handleChange = this.handleChange.bind(this);
-    this.handleRedirect = this.handleRedirect.bind(this);
-  }
-
-  handleChange(event) {
-    const searchQuery = event.target.value;
-
-    this.setState({ searchQuery });
-    
-    // If searchQuery isn't present, don't send request to server
-    if (!searchQuery) {
-      return '';
     }
 
+    this.handleRedirect = this.handleRedirect.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  handleChange(e) {
+    const searchQuery = e.target.value;
+
+    this.setState({ searchQuery });
+
+    // If searchQuery isn't present, don't send request to server
+    if (!searchQuery) {
+      return false;
+    }
+
+    // Set loading to true, while we are fetching data from server
     this.setState({ loading: true });
 
     fetch(`${API_URL}/autocomplete?searchQuery=${searchQuery}`)
       .then(handleResponse)
       .then((result) => {
         this.setState({
-          loading: false,
           searchResults: result,
+          loading: false,
         });
       });
   }
 
   handleRedirect(currencyId) {
     // Clear input value and close autocomplete container,
-    // By clearing searchQuery state
+    // by clearing searchQuery state
     this.setState({
       searchQuery: '',
       searchResults: [],
     });
 
+    // Redirect to currency page
     this.props.history.push(`/currency/${currencyId}`);
   }
 
@@ -58,11 +61,11 @@ class Search extends React.Component {
     if (!searchQuery) {
       return '';
     }
-
+    
     if (searchResults.length > 0) {
       return (
         <div className="Search-result-container">
-          {searchResults.map(result => (
+          {searchResults.map(result =>
             <div
               key={result.id}
               className="Search-result"
@@ -70,11 +73,13 @@ class Search extends React.Component {
             >
               {result.name} ({result.symbol})
             </div>
-          ))}
+          )}
         </div>
-      );
+      )
     }
 
+    // Send no result, only if loading is set to false
+    // To avoid showing no result, when actually there are ones
     if (!loading) {
       return (
         <div className="Search-result-container">
@@ -82,37 +87,42 @@ class Search extends React.Component {
             No results found.
           </div>
         </div>
-      );
+      )
     }
   }
 
   render() {
-    const { loading, searchQuery } = this.state;
+    const { searchQuery, loading } = this.state;
 
     return (
-      <div className="Search">
-        <span className="Search-icon" />
+      <div className='Search'>
+        <div>
+          <span className="Search-icon" />
+          <input 
+            onChange={this.handleChange}
+            type="text"
+            className="Search-input"
+            placeholder="Currency name"
+            value={searchQuery}
+          />
 
-        <input
-          className="Search-input"
-          type="text"
-          placeholder="Currency name"
-          onChange={this.handleChange}
-          value={searchQuery}
-        />
-
-        {loading &&
-          <div className="Search-loading">
-            <Loading
-              width='12px'
-              height='12px'
-            />
-          </div>}
+          {loading &&
+            <div className="Search-loading">
+              <Loading
+                width="12px"
+                height="12px"
+              />
+            </div>}
+        </div>
 
         {this.renderSearchResults()}
       </div>
     );
   }
+}
+
+Search.propTypes = {
+  history: PropTypes.object.isRequired,
 }
 
 export default withRouter(Search);

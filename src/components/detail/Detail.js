@@ -1,7 +1,7 @@
 import React from 'react';
 import { API_URL } from '../../config';
+import { handleResponse, renderChangePercent } from '../../helpers.js';
 import Loading from '../common/Loading';
-import { handleResponse, renderChangePercent } from '../../helpers';
 import './Detail.css';
 
 class Detail extends React.Component {
@@ -10,55 +10,62 @@ class Detail extends React.Component {
 
     this.state = {
       currency: {},
+      error: '',
       loading: false,
-      error: null,
-    };
+    }
   }
 
-  componentDidMount() {
+  componentWillMount() {
+    // Get id from url params
     const currencyId = this.props.match.params.id;
 
+    // Fetch currency
     this.fetchCurrency(currencyId);
   }
 
   componentWillReceiveProps(nextProps) {
     if (this.props.location.pathname !== nextProps.location.pathname) {
-      // Get new currency id from url
-      const newCurrencyId = nextProps.match.params.id;
-
-      this.fetchCurrency(newCurrencyId);
+      // Get id from new url params
+      const currencyId = nextProps.match.params.id;
+      
+      // Fetch currency
+      this.fetchCurrency(currencyId);
     }
   }
 
   fetchCurrency(currencyId) {
+    // Set loading to true, while we are fetching data from server
     this.setState({ loading: true });
 
     fetch(`${API_URL}/cryptocurrencies/${currencyId}`)
       .then(handleResponse)
       .then((currency) => {
+        // Set received data in components state
+        // Clear error if any and set loading to false
         this.setState({
-          loading: false,
-          error: null,
           currency,
+          error: '',
+          loading: false,
         });
       })
       .catch((error) => {
+        // Show error message, if request fails and set loading to false
         this.setState({
-          loading: false,
           error: error.errorMessage,
+          loading: false,
         });
       });
   }
 
   render() {
-    const { loading, error, currency } = this.state;
+    const { currency, loading, error } = this.state;
 
-    // Render only loading component if loading state is set to true
+    // Render only loading component, if loading state is set to true
     if (loading) {
       return <div className="loading-container"><Loading /></div>
     }
 
-    // Render only error message, if error occurred while fetching data
+    // Render only error message, if error occured while fetching data
     if (error) {
       return <div className="error">{error}</div>
     }
@@ -77,8 +84,10 @@ class Detail extends React.Component {
             Rank <span className="Detail-value">{currency.rank}</span>
           </div>
           <div className="Detail-item">
-            24H Change
-            <span className="Detail-value">{renderChangePercent(currency.percentChange24h)}</span>
+            24H change
+            <span className="Detail-value">
+              {renderChangePercent(currency.percentChange24h)}
+            </span>
           </div>
           <div className="Detail-item">
             <span className="Detail-title">Market cap</span>
@@ -86,7 +95,7 @@ class Detail extends React.Component {
             {currency.marketCap}
           </div>
           <div className="Detail-item">
-            <span className="Detail-title">24H Volume</span>
+          <span className="Detail-title">24H Volume</span>
             <span className="Detail-dollar">$</span>
             {currency.volume24h}
           </div>
